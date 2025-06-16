@@ -8,19 +8,25 @@ on:
 jobs:
   update_dolar:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
         with:
           python-version: 3.10
 
-      - run: |
+      - name: Instalar dependencias
+        run: |
           pip install selenium webdriver-manager
 
-      - run: python dolar_selenium.py
+      - name: Ejecutar script de scraping
+        run: python dolar_selenium.py
 
-      - run: |
+      - name: Hacer commit si hay cambios
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add dolarbolivia.json
