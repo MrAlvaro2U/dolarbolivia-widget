@@ -35,11 +35,14 @@ jobs:
         with:
           ref: gh-pages
 
-      - name: Move JSON into gh-pages branch
+      - name: Configure git user
         run: |
-          cp /tmp/dolarbolivia.json dolarbolivia.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Move JSON into gh-pages branch and commit
+        run: |
+          cp /tmp/dolarbolivia.json dolarbolivia.json
           git add dolarbolivia.json
           git commit -m "🔁 Actualizar precio dólar" || echo "No hay cambios"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages
