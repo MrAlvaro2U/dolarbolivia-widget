@@ -35,7 +35,7 @@ jobs:
         with:
           ref: gh-pages
 
-      - name: Move JSON into gh-pages branch
+      - name: Move JSON into gh-pages branch and push
         run: |
           cp /tmp/dolarbolivia.json dolarbolivia.json
           git config user.name "github-actions[bot]"
