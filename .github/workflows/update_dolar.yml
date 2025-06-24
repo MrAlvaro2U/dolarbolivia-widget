@@ -2,7 +2,7 @@ name: Actualizar precio del dólar
 
 on:
   schedule:
-    - cron: "*/15 * * * *"  # cada 15 minutos
+    - cron: "*/5 * * * *"  # cada 5 minutos
   workflow_dispatch:
 
 jobs:
@@ -27,19 +27,22 @@ jobs:
       - name: Run scraper
         run: python3 dolar_selenium.py
 
-      - name: Save JSON to temporary location
-        run: cp dolarbolivia.json /tmp/dolarbolivia.json
+      - name: Save JSONs to temporary location
+        run: |
+          cp dolarbolivia.json /tmp/dolarbolivia.json
+          cp historial_dolarbolivia.json /tmp/historial_dolarbolivia.json
 
       - name: Checkout gh-pages branch
         uses: actions/checkout@v3
         with:
           ref: gh-pages
 
-      - name: Move JSON into gh-pages branch and push
+      - name: Move JSONs into gh-pages branch
         run: |
           cp /tmp/dolarbolivia.json dolarbolivia.json
+          cp /tmp/historial_dolarbolivia.json historial_dolarbolivia.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add dolarbolivia.json
+          git add dolarbolivia.json historial_dolarbolivia.json
           git commit -m "🔁 Actualizar precio dólar" || echo "No hay cambios"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages
