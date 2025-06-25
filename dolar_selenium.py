@@ -3,34 +3,26 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-import time
 import json
 from datetime import datetime
-import re
+import os
 
 def obtener_precio_con_selenium():
     options = Options()
-    options.add_argument("--headless")  # Ejecutar sin abrir ventana del navegador
-    options.add_argument("--disable-gpu")
+    options.add_argument("--headless")
     options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     url = "https://www.dolarbluebolivia.click"
     driver.get(url)
 
-    # Esperar 5 segundos para que cargue el precio
-    time.sleep(5)
+    driver.implicitly_wait(10)  # Esperar que cargue el precio
 
     try:
-        # Buscar el div con id 'usdRate'
-        div_precio = driver.find_element(By.ID, "usdRate")
-        texto = div_precio.text  # Ejemplo: "Bs 16.30"
-        match = re.search(r"(\d{1,3}[.,]\d{1,2})", texto)
-        if not match:
-            raise Exception("No se pudo extraer el precio del texto")
-        precio_str = match.group(1).replace(",", ".")
-        precio = float(precio_str)
-        return precio
+        precio_texto = driver.find_element(By.CLASS_NAME, "exchange-rate").text.strip()
+        precio_dolar = float(precio_texto.replace(',', '.'))
+        return precio_dolar
     finally:
         driver.quit()
 
@@ -38,10 +30,23 @@ def guardar_json(precio):
     data = {
         "precio_dolar_compra": precio,
         "fuente": "https://www.dolarbluebolivia.click",
-        "actualizado": datetime.now().isoformat()
+        "actualizado": datetime.utcnow().isoformat()
     }
+
     with open("dolarbolivia.json", "w") as f:
-        json.dump(data, f, indent=4)
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+    historial_path = "historial_dolarbolivia.json"
+    if os.path.exists(historial_path):
+        with open(historial_path, "r") as f:
+            historial = json.load(f)
+    else:
+        historial = []
+
+    historial.append(data)
+
+    with open(historial_path, "w") as f:
+        json.dump(historial, f, indent=2, ensure_ascii=False)
 
 if __name__ == "__main__":
     try:
