@@ -20,8 +20,9 @@ def obtener_precio_con_selenium():
     driver.implicitly_wait(10)  # Esperar que cargue el precio
 
     try:
-        precio_texto = driver.find_element(By.CLASS_NAME, "exchange-rate").text.strip()
-        precio_dolar = float(precio_texto.replace(',', '.'))
+        # Obtener el precio usando ID correcto
+        precio_texto = driver.find_element(By.ID, "usdRate").text.strip()
+        precio_dolar = float(precio_texto.replace(',', '.').replace('Bs', '').strip())
         return precio_dolar
     finally:
         driver.quit()
