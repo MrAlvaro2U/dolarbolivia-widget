@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import os
 
 def obtener_precio_con_selenium():
@@ -28,15 +28,20 @@ def obtener_precio_con_selenium():
         driver.quit()
 
 def guardar_json(precio):
+    zona_bolivia = timezone(timedelta(hours=-4))
+    ahora = datetime.now(zona_bolivia).isoformat()
+
     data = {
         "precio_dolar_compra": precio,
         "fuente": "https://www.dolarbluebolivia.click",
-        "actualizado": datetime.utcnow().isoformat()
+        "actualizado": ahora
     }
 
+    # Guardar archivo principal
     with open("dolarbolivia.json", "w") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+    # Guardar historial
     historial_path = "historial_dolarbolivia.json"
     if os.path.exists(historial_path):
         with open(historial_path, "r") as f:
