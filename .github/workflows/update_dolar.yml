@@ -1,34 +1,39 @@
 name: Actualizar precio del dólar
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 * * * *' # Cada hora
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
   update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clonar rama gh-pages
+      - name: Clonar todas las ramas
         uses: actions/checkout@v4
         with:
-          ref: gh-pages
+          fetch-depth: 0
 
-      - name: Instalar dependencias de Python
+      - name: Instalar dependencias
         run: |
           pip install selenium webdriver-manager
 
-      - name: Ejecutar script para generar archivos JSON
-        run: python3 dolar_selenium.py
+      - name: Cambiar a main y ejecutar script
+        run: |
+          git switch main
+          python3 dolar_selenium.py
 
-      - name: Commit y push si hay cambios
+      - name: Cambiar a gh-pages y mover JSON
+        run: |
+          git switch gh-pages
+          cp ../dolarbolivia.json .
+          cp ../historial_dolarbolivia.json .
+
+      - name: Hacer commit y push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add dolarbolivia.json historial_dolarbolivia.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Actualizar archivos JSON desde script Python"
-            git push origin gh-pages
-          else
-            echo "No hay cambios que subir."
+          git commit -m "⏱ Actualización automática del dólar (hora Bolivia)" || echo "Sin cambios que commitear"
+          git push origin gh-pages
