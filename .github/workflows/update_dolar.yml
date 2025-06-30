@@ -26,6 +26,13 @@ jobs:
     - name: Ejecutar script Python
       run: python dolar_selenium.py
 
+    - name: Configurar git y commitear archivos JSON
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+        git add dolarbolivia.json historial_dolarbolivia.json
+        git commit -m "Actualizar archivos JSON desde script Python" || echo "Nada que commitear"
+
     - name: Cambiar a gh-pages
       run: git switch gh-pages
 
