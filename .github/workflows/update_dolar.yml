@@ -36,11 +36,6 @@ jobs:
     - name: Cambiar a gh-pages
       run: git switch gh-pages
 
-    - name: Copiar archivos JSON generados
-      run: |
-        cp ../dolarbolivia.json ./dolarbolivia.json
-        cp ../historial_dolarbolivia.json ./historial_dolarbolivia.json
-
     - name: Configurar Git
       run: |
         git config user.name "github-actions"
