@@ -13,7 +13,7 @@ jobs:
     - name: Clonar repositorio
       uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # importante para cambiar de rama
+        fetch-depth: 0  # importante para trabajar con ramas
 
     - name: Configurar Python
       uses: actions/setup-python@v4
@@ -26,22 +26,19 @@ jobs:
     - name: Ejecutar script Python
       run: python dolar_selenium.py
 
-    - name: Configurar git y commitear archivos JSON
-      run: |
-        git config --global user.email "actions@github.com"
-        git config --global user.name "GitHub Actions"
-        git add dolarbolivia.json historial_dolarbolivia.json
-        git commit -m "Actualizar archivos JSON desde script Python" || echo "Nada que commitear"
-
     - name: Cambiar a gh-pages
       run: git switch gh-pages
+
+    - name: Copiar archivos JSON desde main
+      run: |
+        git checkout main -- dolarbolivia.json historial_dolarbolivia.json
 
     - name: Configurar Git
       run: |
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
 
-    - name: Commit y Push
+    - name: Commit y push a gh-pages
       run: |
         git add dolarbolivia.json historial_dolarbolivia.json
         git commit -m "✅ Actualización automática del precio del dólar" || echo "Sin cambios que commitear"
