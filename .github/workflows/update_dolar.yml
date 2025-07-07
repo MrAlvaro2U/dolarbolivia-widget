@@ -38,4 +38,5 @@ jobs:
       run: |
         git add dolarbolivia.json historial_dolarbolivia.json
         git commit -m "✅ Actualización automática del precio del dólar" || echo "Sin cambios que commitear"
+        git pull origin gh-pages --rebase
         git push origin gh-pages
