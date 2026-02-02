@@ -36,6 +36,9 @@ jobs:
 
     - name: Commit y push a gh-pages
       run: |
+        git config --global http.version HTTP/1.1
+        git config --global http.postBuffer 524288000
+
         git add dolarbolivia.json historial_dolarbolivia.json
         git commit -m "✅ Actualización automática del precio del dólar" || echo "Sin cambios que commitear"
         git push origin gh-pages --force
