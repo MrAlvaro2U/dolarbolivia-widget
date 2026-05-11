@@ -359098,5 +359098,10 @@
     "precio_dolar_compra": 9.99,
     "fuente": "https://www.dolarbluebolivia.click",
     "actualizado": "2026-05-11T12:20:39.021377-04:00"
+  },
+  {
+    "precio_dolar_compra": 10.0,
+    "fuente": "https://www.dolarbluebolivia.click",
+    "actualizado": "2026-05-11T12:33:38.654190-04:00"
   }
 ]
