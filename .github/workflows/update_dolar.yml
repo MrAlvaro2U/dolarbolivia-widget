@@ -2,43 +2,183 @@ name: Actualizar precio del dólar
 
 on:
   schedule:
-     - cron: '0,5,10,15,20,25,30,35,40,45,50,55 * * * *'  # cada 5 minutos exactos
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 * * * *'  # cada 5 minutos exactos
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dolar-history-update
+  queue: max
+  cancel-in-progress: false
 
 jobs:
   actualizar-json:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Clonar repositorio
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 1
 
-    - name: Configurar Git
-      run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
+      - name: Configurar Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
-    - name: Cambiar a gh-pages
-      run: git switch gh-pages
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Configurar Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.11
+      - name: Instalar dependencias
+        run: pip install selenium webdriver-manager
 
-    - name: Instalar dependencias
-      run: pip install selenium webdriver-manager
+      - name: Guardar referencia de integridad
+        run: cp historial_dolarbolivia.json "$RUNNER_TEMP/historial_dolarbolivia.before.json"
 
-    - name: Ejecutar script Python
-      run: python dolar_selenium.py
+      - name: Ejecutar script Python
+        run: python dolar_selenium.py
 
-    - name: Commit y push a gh-pages
-      run: |
-        git config --global http.version HTTP/1.1
-        git config --global http.postBuffer 524288000
+      - name: Validar integridad del historial
+        run: |
+          python - "$RUNNER_TEMP/historial_dolarbolivia.before.json" historial_dolarbolivia.json dolarbolivia.json <<'PY'
+          import json
+          import sys
 
-        git add dolarbolivia.json historial_dolarbolivia.json
-        git commit -m "✅ Actualización automática del precio del dólar" || echo "Sin cambios que commitear"
-        git push origin gh-pages --force
+          previous_path, current_path, price_path = sys.argv[1:]
+
+          def load_json(path):
+              with open(path, encoding="utf-8") as file:
+                  return json.load(file)
+
+          previous = load_json(previous_path)
+          current = load_json(current_path)
+          load_json(price_path)
+
+          if not isinstance(previous, list) or not isinstance(current, list):
+              raise SystemExit("El historial debe ser un arreglo JSON")
+
+          def index_by_timestamp(records, label):
+              indexed = {}
+              for position, observation in enumerate(records):
+                  if not isinstance(observation, dict):
+                      raise SystemExit(f"{label}: observación {position} no es un objeto")
+                  timestamp = observation.get("actualizado")
+                  if not isinstance(timestamp, str) or not timestamp:
+                      raise SystemExit(f"{label}: observación {position} no tiene timestamp válido")
+                  if timestamp in indexed:
+                      raise SystemExit(f"{label}: timestamp duplicado: {timestamp}")
+                  indexed[timestamp] = observation
+              return indexed
+
+          previous_by_timestamp = index_by_timestamp(previous, "Historial anterior")
+          current_by_timestamp = index_by_timestamp(current, "Historial nuevo")
+
+          if len(current) < len(previous):
+              raise SystemExit(
+                  f"El historial perdió registros: {len(previous)} -> {len(current)}"
+              )
+
+          missing = previous_by_timestamp.keys() - current_by_timestamp.keys()
+          if missing:
+              raise SystemExit(
+                  f"Faltan {len(missing)} timestamps históricos; primero: {min(missing)}"
+              )
+
+          changed = [
+              timestamp
+              for timestamp, observation in previous_by_timestamp.items()
+              if current_by_timestamp[timestamp] != observation
+          ]
+          if changed:
+              raise SystemExit(
+                  f"Se modificaron {len(changed)} observaciones históricas; primera: {min(changed)}"
+              )
+
+          print(f"Integridad verificada: {len(previous)} -> {len(current)} registros")
+          print(f"Timestamps únicos: {len(current_by_timestamp)}")
+          print("Todas las observaciones históricas anteriores permanecen intactas")
+          PY
+
+      - name: Commit y push seguro a gh-pages
+        run: |
+          git add dolarbolivia.json historial_dolarbolivia.json
+
+          if git diff --cached --quiet; then
+            echo "Sin cambios que commitear"
+            exit 0
+          fi
+
+          git commit -m "✅ Actualización automática del precio del dólar"
+
+          if git push origin HEAD:gh-pages; then
+            exit 0
+          fi
+
+          echo "El remoto cambió o la respuesta del primer push se interrumpió; verificando de forma segura"
+          git fetch --depth=10 origin refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          git rebase origin/gh-pages
+
+          python - "$RUNNER_TEMP/historial_dolarbolivia.before.json" historial_dolarbolivia.json dolarbolivia.json <<'PY'
+          import json
+          import sys
+
+          previous_path, current_path, price_path = sys.argv[1:]
+
+          def load_json(path):
+              with open(path, encoding="utf-8") as file:
+                  return json.load(file)
+
+          previous = load_json(previous_path)
+          current = load_json(current_path)
+          load_json(price_path)
+
+          if not isinstance(previous, list) or not isinstance(current, list):
+              raise SystemExit("El historial debe ser un arreglo JSON")
+
+          def index_by_timestamp(records, label):
+              indexed = {}
+              for position, observation in enumerate(records):
+                  if not isinstance(observation, dict):
+                      raise SystemExit(f"{label}: observación {position} no es un objeto")
+                  timestamp = observation.get("actualizado")
+                  if not isinstance(timestamp, str) or not timestamp:
+                      raise SystemExit(f"{label}: observación {position} no tiene timestamp válido")
+                  if timestamp in indexed:
+                      raise SystemExit(f"{label}: timestamp duplicado: {timestamp}")
+                  indexed[timestamp] = observation
+              return indexed
+
+          previous_by_timestamp = index_by_timestamp(previous, "Historial anterior")
+          current_by_timestamp = index_by_timestamp(current, "Historial después del rebase")
+
+          if len(current) < len(previous):
+              raise SystemExit(
+                  f"El historial perdió registros después del rebase: {len(previous)} -> {len(current)}"
+              )
+
+          missing = previous_by_timestamp.keys() - current_by_timestamp.keys()
+          if missing:
+              raise SystemExit(
+                  f"Faltan {len(missing)} timestamps después del rebase; primero: {min(missing)}"
+              )
+
+          changed = [
+              timestamp
+              for timestamp, observation in previous_by_timestamp.items()
+              if current_by_timestamp[timestamp] != observation
+          ]
+          if changed:
+              raise SystemExit(
+                  f"Se modificaron {len(changed)} observaciones después del rebase; primera: {min(changed)}"
+              )
+
+          print(f"Integridad después del rebase: {len(previous)} -> {len(current)} registros")
+          print(f"Timestamps únicos: {len(current_by_timestamp)}")
+          PY
+
+          git push origin HEAD:gh-pages
