@@ -10,6 +10,7 @@ permissions:
 
 concurrency:
   group: dolar-history-update
+  queue: max
   cancel-in-progress: false
 
 jobs:
@@ -119,7 +120,7 @@ jobs:
           fi
 
           echo "El remoto cambió o la respuesta del primer push se interrumpió; verificando de forma segura"
-          git fetch --depth=10 origin gh-pages
+          git fetch --depth=10 origin refs/heads/gh-pages:refs/remotes/origin/gh-pages
           git rebase origin/gh-pages
 
           python - "$RUNNER_TEMP/historial_dolarbolivia.before.json" historial_dolarbolivia.json dolarbolivia.json <<'PY'
